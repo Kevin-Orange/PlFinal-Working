@@ -1,67 +1,61 @@
-# EBNF grammar for the language implemented in lang/src/*
-
-# Start symbol
+Start Symbol
 <program> ::= { <func_decl> } ;
 
-# Functions
-# NOTE: types are highlighted (green) and punctuation/symbols are highlighted (cyan) when viewed in a supporting terminal.
-# Types: [32m i32 f32 char bool [0m    Symbols: [36m ( ) [ ] , ; -> = || && + - * / < > <= >= == != [0m
+Functions
+// Function declaration with optional parameters and return type
 
-<func_decl> ::= [36m"func"[0m <id> [36m"(" [0m [ <params> ] [36m")"[0m [ [32m"->" <type>[0m ] <block> ;
-<params> ::= <param> { [36m"," [0m <param> } ;
-<param> ::= <id> [36m":"[0m <type> ;
+<func_decl> ::= "func" <id> "(" [ <params> ] ")" [ "->" <type> ] <block> ;
+<params> ::= <param> { "," <param> } ;
+<param> ::= <id> ":" <type> ;
 
-# Types
-<type> ::= [32m"i32"[0m | [32m"f32"[0m | [32m"char"[0m | [32m"bool"[0m ;
+Types
+<type> ::= "i32" | "f32" | "char" | "bool" ;
 
-# Statements and blocks
-<block> ::= [36m"["[0m { <stmt> } [36m"]"[0m ;
+Statements and Blocks
+
+<block> ::= "[" { <stmt> } "]" ;
 <stmt> ::= <let_stmt>
-         |  <if_stmt>
-         |  <while_stmt>
-         |  <return_stmt>
-         |  <print_stmt>
-         |  <expr_stmt> ;
+         | <if_stmt>
+         | <while_stmt>
+         | <return_stmt>
+         | <print_stmt>
+         | <expr_stmt> ;
+<let_stmt> ::= "let" <id> [ ":" <type> ] [ "=" <expr> ] ";" ;
+<if_stmt> ::= "if" <expr> <block> [ "else" <block> ] ;
+<while_stmt> ::= "while" <expr> <block> ;
+<return_stmt> ::= "return" <expr> ";" ;
+<print_stmt> ::= "print" <expr> ";" ;
+<expr_stmt> ::= <expr> ";" ;
 
-<let_stmt> ::= [36m"let"[0m <id> [ [36m":"[0m <type> ] [ [36m"="[0m <expr> ] [36m";"[0m ;
-<if_stmt> ::= [36m"if"[0m <expr> <block> [ [36m"else"[0m <block> ] ;
-<while_stmt> ::= [36m"while"[0m <expr> <block> ;
-<return_stmt> ::= [36m"return"[0m <expr> [36m";"[0m ;
-<print_stmt> ::= [36m"print"[0m <expr> [36m";"[0m ;
-<expr_stmt> ::= <expr> [36m";"[0m ;
+Expressions (Precedence via Pratt Parser)
+// Expression hierarchy ordered by precedence
 
-# Expressions (precedence handled by Pratt parser)
 <expr> ::= <assign> ;
-<assign> ::= <or_expr> | <id> [36m"="[0m <assign> ;
-<or_expr> ::= <and_expr> { [36m"||" [0m <and_expr> } ;
-<and_expr> ::= <eq_expr> { [36m"&&" [0m <eq_expr> } ;
-<eq_expr> ::= <rel_expr> { ( [36m"=="[0m | [36m"!="[0m ) <rel_expr> } ;
-<rel_expr> ::= <add_expr> { ( [36m"<"[0m | [36m">[0m | [36m"<="[0m | [36m">="[0m ) <add_expr> } ;
-<add_expr> ::= <mul_expr> { ( [36m"+"[0m | [36m"-"[0m ) <mul_expr> } ;
-<mul_expr> ::= <unary> { ( [36m"*"[0m | [36m"/"[0m ) <unary> } ;
-<unary> ::= <primary> | ( [36m"!"[0m | [36m"-"[0m ) <unary> ;
-<primary> ::= <id> | <literal> | <call> | [36m"("[0m <expr> [36m")"[0m ;
-<call> ::= <id> [36m"("[0m [ <args> ] [36m")"[0m ;
-<args> ::= <expr> { [36m"," [0m <expr> } ;
+<assign> ::= <or_expr> | <id> "=" <assign> ;
+<or_expr> ::= <and_expr> { "||" <and_expr> } ;
+<and_expr> ::= <eq_expr> { "&&" <eq_expr> } ;
+<eq_expr> ::= <rel_expr> { ( "==" | "!=" ) <rel_expr> } ;
+<rel_expr> ::= <add_expr> { ( "<" | ">" | "<=" | ">=" ) <add_expr> } ;
+<add_expr> ::= <mul_expr> { ( "+" | "-" ) <mul_expr> } ;
+<mul_expr> ::= <unary> { ( "*" | "/" ) <unary> } ;
+<unary> ::= <primary> | ( "!" | "-" ) <unary> ;
+<primary> ::= <id> | <literal> | <call> | "(" <expr> ")" ;
+<call> ::= <id> "(" [ <args> ] ")" ;
+<args> ::= <expr> { "," <expr> } ;
 
-# Lexical
+Lexical Elements
+
 <id> ::= ( letter | "_" ) { letter | digit | "_" | "-" } ;
 <literal> ::= <int> | <float> | <char> | <bool> | <string> ;
 <int> ::= digit { digit } ;
-<float> ::= digit { digit } [36m"." [0m digit { digit } ;
+<float> ::= digit { digit } "." digit { digit } ;
 <char> ::= "'" character "'" ;
-<bool> ::= [32m"true"[0m | [32m"false"[0m ;
+<bool> ::= "true" | "false" ;
 <string> ::= '"' { character } '"' ;
 letter ::= "a".."z" | "A".."Z" ;
 digit ::= "0".."9" ;
 
-# Comments / whitespace
+Comments and Whitespace
+
 <comment> ::= "//" { character } ;
 <ws> ::= { ' ' | '\t' | '\n' | '\r' } ;
-# Note: <ws> and <comment> are skipped by the lexer.
-
-# Notes
-# - 'print' is a reserved keyword and forms a statement, not a normal call.
-# - 'return' requires an expression in the current implementation.
-# - Identifiers currently allow '-' inside them (lexer behavior).
-# - Assignment is right-associative: a = b = 1  -> a = (b = 1).
