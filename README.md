@@ -92,6 +92,103 @@ The language supports:
 - Function calls: `factorial(n)`
 - Print statement: `print result;`
 
+## Grammar Specification (EBNF)
+
+The following EBNF matches the current implementation in `lang/src/{lexer.rs, parser.rs, pratt_parser.rs}`.
+
+Notation: { } = repetition (0..n), [ ] = optional (0..1), | = alternative, "..." = terminal.
+
+Program
+<program> ::= { <func_decl> }
+
+Functions
+<func_decl> ::= "func" <id> "(" [ <params> ] ")" [ "->" <type> ] <block>
+<params> ::= <param> { "," <param> }
+<param> ::= <id> ":" <type>
+
+Types
+<type> ::= "i32" | "f32" | "char" | "bool"
+
+Statements and Blocks
+<block> ::= "[" { <stmt> } "]"
+<stmt> ::= <let_stmt> | <if_stmt> | <while_stmt> | <return_stmt> | <print_stmt> | <expr_stmt>
+
+<let_stmt> ::= "let" <id> [ ":" <type> ] [ "=" <expr> ] ";"
+<if_stmt> ::= "if" <expr> <block> [ "else" <block> ]
+<while_stmt> ::= "while" <expr> <block>
+<return_stmt> ::= "return" <expr> ";"
+<print_stmt> ::= "print" <expr> ";"
+<expr_stmt> ::= <expr> ";"
+
+Expressions (precedence handled by Pratt parser)
+<expr> ::= <assign>
+<assign> ::= <or_expr> | <id> "=" <assign>
+<or_expr> ::= <and_expr> { "||" <and_expr> }
+<and_expr> ::= <eq_expr> { "&&" <eq_expr> }
+<eq_expr> ::= <rel_expr> { ( "==" | "!=" ) <rel_expr> }
+<rel_expr> ::= <add_expr> { ( "<" | ">" | "<=" | ">=" ) <add_expr> }
+<add_expr> ::= <mul_expr> { ( "+" | "-" ) <mul_expr> }
+<mul_expr> ::= <unary> { ( "*" | "/" ) <unary> }
+<unary> ::= <primary> | ( "!" | "-" ) <unary>
+<primary> ::= <id> | <literal> | <call> | "(" <expr> ")"
+<call> ::= <id> "(" [ <args> ] ")"
+<args> ::= <expr> { "," <expr> }
+
+Lexical (informal EBNF)
+<id> ::= ( letter | "_" ) { letter | digit | "_" | "-" }
+<literal> ::= <int> | <float> | <char> | <bool> | <string>
+<int> ::= digit { digit }
+<float> ::= digit { digit } "." digit { digit }
+<char> ::= "'" character "'"
+<bool> ::= "true" | "false"
+<string> ::= '"' { character } '"'
+letter ::= "a".."z" | "A".."Z"
+digit ::= "0".."9"
+
+Comments
+"//" { character } (line comment, discarded by lexer)
+
+Precedence (high → low): primary, unary (! -), mult (* /), add (+ -), relational (< > <= >=), equality (== !=), logical (&& ||), assignment (=)
+
+-- Note: conditionals do not require parentheses around the condition in this implementation.
+<let_stmt> ::= "let" <id> [":" <type>] ["=" <expr>] ";"
+<if_stmt> ::= "if" <expr> <block> ["else" <block>]
+<while_stmt> ::= "while" <expr> <block>
+<return_stmt> ::= "return" <expr> ";"
+<print_stmt> ::= "print" <expr> ";"
+<expr_stmt> ::= <expr> ";"
+
+Expressions (operator precedence handled by Pratt parser)
+<expr> ::= <assign>
+<assign> ::= <or_expr> | <id> "=" <assign>
+<or_expr> ::= <and_expr> ["||" <and_expr>...]
+<and_expr> ::= <eq_expr> ["&&" <eq_expr>...]
+<eq_expr> ::= <rel_expr> [("==" | "!=") <rel_expr>...]
+<rel_expr> ::= <add_expr> [("<" | ">" | "<=" | ">=") <add_expr>...]
+<add_expr> ::= <mul_expr> [("+" | "-") <mul_expr>...]
+<mul_expr> ::= <unary> [("*" | "/") <unary>...]
+<unary> ::= <primary> | "!" <unary> | "-" <unary>
+<primary> ::= <id> | <literal> | <call> | "(" <expr> ")"
+<call> ::= <id> "(" [<args>] ")"
+<args> ::= <expr> ["," <expr>...]
+
+Lexical
+<id> ::= (letter | "_") [letter | digit | "_" | "-"...]
+<literal> ::= <int> | <float> | <char> | <bool> | <string>
+<int> ::= digit [digit...]
+<float> ::= digit [digit...] "." digit [digit...]
+<char> ::= "'" char "'"
+<bool> ::= "true" | "false"
+<string> ::= '"' [char...] '"'
+letter ::= "a".."z" | "A".."Z"
+digit ::= "0".."9"
+
+Comments
+// ... (line comment, discarded during lexing)
+
+Precedence (high to low): primary, unary (! -), mult (* /), add (+ -), relational (< > <= >=), equality (== !=), logical (&& ||), assignment (=)
+
+
 ## Example
 
 ```tpl
