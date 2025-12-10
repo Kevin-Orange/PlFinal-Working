@@ -18,7 +18,7 @@ From the repository root, use the convenient wrapper:
 cargo run print
 ```
 
-### Parse with verbose output
+### Parse to tree
 ```bash
 cargo run parse lex.txt
 ```
@@ -29,22 +29,22 @@ cargo run tokenize lex.txt
 ```
 
 ### Custom files
-To run on a custom file, specify the path:
+To run a custom file, specify the path:
 ```bash
-cargo run parse path/to/myfile.tpl
+cargo run execute path/to/myfile
 ```
 
 The wrapper automatically resolves paths under `lang/src/` or `lang/`, so you can run:
 ```bash
 cargo run parse myfile.tpl
 ```
-and it will find `lang/src/myfile.tpl` if it exists.
+and it will find `lang/src/myfile` if it exists.
 
 ### Alternative (direct invocation)
 If you prefer to invoke the compiler directly:
 ```bash
 cd lang
-cargo run -- parse src/lex.txt
+cargo run -- execute src/lex.txt
 ```
 
 ## Features
@@ -64,6 +64,7 @@ lang/
   src/
     main.rs          - Entry point, orchestrates CLI and analysis
     cli.rs           - CLI command handler
+    interpreter.rs   - Runs AST
     lexer.rs         - FSM-based tokenizer
     token.rs         - Token definitions
     parser.rs        - Recursive descent parser
