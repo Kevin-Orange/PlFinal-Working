@@ -574,5 +574,27 @@ pub fn analyze(tree: &MTree, symbols: &mut SymbolTable) -> Result<Type, Vec<Stri
     if errors.is_empty() { Ok(ty) } else { Err(errors) }
 }
 
+//constant folding
+pub fn fold_constants(node: &mut MTree) {
+    match node {
+        MTree::EXPR {left, right, op} => {
+            fold_constants(left);
+            fold_constants(right);
 
-
+            if let (MTree::LIT_INT { value: a }, MTree::LIT_INT { value: b }) = (&**left, &**right) {
+                let v = match op.as_str() {
+                    "+" => a + b,
+                    "-" => a - b,
+                    "*" => a * b,
+                    "/" => {
+                        if *b == 0 { return; }
+                        a / b
+                    }
+                    _ => return,
+                };
+                *node = MTree::LIT_INT { value: v };
+            }
+        }
+        _ => {}
+    }
+}

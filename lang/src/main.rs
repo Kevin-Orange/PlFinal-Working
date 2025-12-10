@@ -9,12 +9,15 @@ mod interpreter;
 
 use clap::Parser;
 
+use crate::semantic::fold_constants;
+
 fn main() {
     // parse CLI
     let args: cli::Cli = cli::Cli::parse();
 
     // get semantic tree from the command
-    let tree = cli::handle(args);
+    let mut tree = cli::handle(args);
+    fold_constants(&mut tree);
 
     // symbol table
     let mut sym_table = semantic::SymbolTable::new();
