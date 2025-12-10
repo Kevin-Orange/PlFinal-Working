@@ -40,7 +40,7 @@ impl SymbolTable {
 }
 
 /// Semantic AST used by analyzer.
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum MTree {
     START { funcs: Vec<MTree> },
     FUNC_DECL { name: String, params: Vec<(String, Type)>, ret_type: Type, body: Box<MTree> },
