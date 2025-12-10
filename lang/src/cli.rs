@@ -8,7 +8,8 @@ use crate::parser::Parser as LangParser;
 use crate::mtree::MTree as ParseTree;
 
 // semantic analysis outputs semantic::MTree
-use crate::semantic::{MTree as SemanticTree, from_parse_tree};
+use crate::semantic::{MTree as SemanticTree, from_parse_tree, fold_constants, SymbolTable, analyze};
+use crate::interpreter::Interpreter;
 
 #[derive(Parser)]
 #[command(name = "lang", version)]
@@ -35,29 +36,22 @@ pub enum Command {
     }
 }
 
-pub fn handle(cli: Cli) -> SemanticTree {
+pub fn handle(cli: Cli)  {
     match cli.command {
         Command::Print { filepath, numbered } => {
             print_file(filepath, numbered);
-
-            // return empty semantic tree 
-            SemanticTree::START { funcs: vec![] }
         }
 
         Command::Tokenize { filepath } => {
             tokenize(filepath);
-
-            // return empty semantic tree
-            SemanticTree::START { funcs: vec![] }
         }
 
         Command::Parse { filepath } => {
             parse(filepath);
-            SemanticTree::START { funcs: vec![] }
         }
 
         Command::Execute { filepath } => {
-            execute(filepath)
+            execute(filepath);
         }
     }
 }
@@ -93,7 +87,7 @@ fn parse(path: String) {
     parse_tree.print();
 }
 
-fn execute(path: String) -> SemanticTree {
+fn execute(path: String) {
     let contents = fs::read_to_string(path).unwrap();
 
     // correct: parser produces mtree::MTree
@@ -107,14 +101,44 @@ fn execute(path: String) -> SemanticTree {
 
     // Convert parse tree to semantic tree
     match from_parse_tree(&parse_tree) {
-        Ok(ast) => {
+        Ok(mut ast) => {
             println!("\n=== Semantic AST ===\n{:#?}", ast);
-            ast
+
+            fold_constants(&mut ast);
+
+            // symbol table
+            let mut sym_table = SymbolTable::new();
+
+            // run semantic analysis and report how many errors we found
+            match analyze(&ast, &mut sym_table) {
+                Ok(_) => {
+                    println!("\n✓ Semantic analysis completed with 0 error(s).");
+                    
+                    // If semantic analysis passed, execute the program
+                    println!("\n=== Program Execution ===");
+                    let mut interp = Interpreter::new();
+                    match interp.execute(ast) {
+                        Ok(_) => println!("\n✓ Execution completed successfully"),
+                        Err(e) => eprintln!("\n✗ Runtime error: {}", e),
+                    }
+                }
+                Err(errors) => {
+                    println!("\n✓ Semantic analysis completed with {} error(s):", errors.len());
+                    for (i, error) in errors.iter().enumerate() {
+                        println!("  {}. {}", i + 1, error);
+                    }
+                    println!("\n✗ Skipping execution due to semantic errors");
+                }
+            }
         }
         Err(e) => {
             panic!("Semantic conversion failed: {}", e);
         }
     }
+
+    
+
+
 }
 
 
