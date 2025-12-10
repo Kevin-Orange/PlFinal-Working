@@ -30,6 +30,9 @@ pub enum Command {
     Parse {
         filepath: String,
     },
+    Execute {
+        filepath: String,
+    }
 }
 
 pub fn handle(cli: Cli) -> SemanticTree {
@@ -49,7 +52,12 @@ pub fn handle(cli: Cli) -> SemanticTree {
         }
 
         Command::Parse { filepath } => {
-            parse_and_convert(filepath)
+            parse(filepath);
+            SemanticTree::START { funcs: vec![] }
+        }
+
+        Command::Execute { filepath } => {
+            execute(filepath)
         }
     }
 }
@@ -72,7 +80,20 @@ fn tokenize(path: String) {
     lexer.print_tokens();
 }
 
-fn parse_and_convert(path: String) -> SemanticTree {
+fn parse(path: String) {
+    let contents = fs::read_to_string(path).unwrap();
+
+    // correct: parser produces mtree::MTree
+    let lexer = Lexer::new(contents);
+    let mut parser = LangParser::new(lexer);
+
+    let parse_tree: ParseTree = parser.analyze();
+
+    println!("\n=== Parse Tree ===");
+    parse_tree.print();
+}
+
+fn execute(path: String) -> SemanticTree {
     let contents = fs::read_to_string(path).unwrap();
 
     // correct: parser produces mtree::MTree
@@ -95,8 +116,6 @@ fn parse_and_convert(path: String) -> SemanticTree {
         }
     }
 }
-
-
 
 
 
